@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1/19 공연장 대관 정리</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  @page { size: A4; margin: 12mm; }
+  :root{
+    --ink:#191f28; --ink2:#333d4b; --sub:#6b7684; --mute:#8b95a1;
+    --line:#e5e8eb; --bg:#f2f4f6; --card:#fff; --soft:#f9fafb;
+    --accent:#3182f6; --accent-bg:#e8f3ff;
+    --ok:#0f8a5f; --ok-bg:#e6f6ee;
+    --wait:#b26b00; --wait-bg:#fff3dc;
+    --no:#d6383a; --no-bg:#fdeced;
+    --ex:#6b7684; --ex-bg:#eef0f3;
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none !important}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+    color:var(--ink);background:var(--bg);font-size:15px;line-height:1.6;letter-spacing:-.01em;
+    -webkit-font-smoothing:antialiased;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+
+  /* 상단바 */
+  .topbar{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .brand{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;padding:14px 0 6px}
+  .brand h1{font-size:19px;font-weight:800;margin:0;letter-spacing:-.03em;white-space:nowrap}
+  .brand span{font-size:13px;color:var(--sub)}
+  .tabs{display:flex;gap:6px;overflow-x:auto;padding:6px 0 12px;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:none;border:0;background:transparent;color:var(--sub);font:inherit;font-size:15px;font-weight:600;
+    padding:8px 14px;border-radius:999px;cursor:pointer;white-space:nowrap}
+  .tab:hover{background:var(--bg);color:var(--ink)}
+  .tab.on{background:var(--ink);color:#fff}
+  .tab .n{font-size:12px;font-weight:700;margin-left:4px;opacity:.6}
+
+  /* 계산기 */
+  .calc{margin:22px 0 0;background:var(--card);border-radius:var(--radius);padding:16px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px}
+  .calc .ttl{font-weight:700;font-size:15px}
+  .calc label{display:flex;align-items:center;gap:8px;font-size:14.5px;color:var(--ink2)}
+  .calc input[type=number]{width:84px;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-size:16px;font-weight:600;text-align:right}
+  .calc input[type=number]:focus{outline:none;border-color:var(--accent)}
+  .calc input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
+  .calc .hint{flex-basis:100%;font-size:13px;color:var(--mute);margin-top:-4px}
+
+  /* 공통 섹션 */
+  .view{display:none;padding:26px 0 10px}
+  .view.on{display:block}
+  .view-head{margin-bottom:16px}
+  .view-head h2{font-size:24px;font-weight:800;margin:0;letter-spacing:-.03em}
+  .view-head p{margin:4px 0 0;color:var(--sub);font-size:14px}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+  .stat{background:var(--card);border-radius:var(--radius);padding:14px 16px;border:2px solid transparent;cursor:pointer;text-align:left;font:inherit;color:inherit}
+  .stat:hover{border-color:var(--line)}
+  .stat.on{border-color:var(--ink)}
+  .stat b{display:block;font-size:24px;font-weight:800;letter-spacing:-.03em}
+  .stat span{font-size:13px;color:var(--sub)}
+  .stat.ok b{color:var(--ok)} .stat.wait b{color:var(--wait)} .stat.no b{color:var(--no)} .stat.ex b{color:var(--ex)}
+
+  /* 요약표 */
+  .tablebox{background:var(--card);border-radius:var(--radius);padding:6px 8px;overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:14.5px}
+  th,td{padding:12px 12px;text-align:left;vertical-align:middle}
+  th{color:var(--mute);font-weight:600;font-size:13px;border-bottom:1px solid var(--line)}
+  tbody tr{border-bottom:1px solid var(--line);cursor:pointer;break-inside:avoid}
+  tbody tr:last-child{border-bottom:0}
+  tbody tr:hover{background:var(--soft)}
+  td.num,th.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  td .vn{font-weight:700;color:var(--ink)}
+  td .ar{display:inline-block;font-size:12.5px;font-weight:600;color:var(--ink2);background:var(--bg);border-radius:6px;padding:2px 8px;white-space:nowrap}
+  td.pp{color:var(--accent);font-weight:700}
+  td.memo{color:var(--sub);font-size:13.5px}
+  .foot-note{font-size:12.5px;color:var(--mute);padding:8px 12px 10px}
+
+  /* 상태 필터 */
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+  .chip{border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:6px 14px;font:inherit;font-size:13.5px;font-weight:600;color:var(--ink2);cursor:pointer}
+  .chip.on{border-color:var(--ink);background:var(--ink);color:#fff}
+
+  /* 카드 */
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .card{background:var(--card);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;
+    break-inside:avoid;page-break-inside:avoid;transition:box-shadow .2s}
+  .card.flash{box-shadow:0 0 0 3px var(--accent)}
+  .card.dim .photo,.card.dim .price-row{opacity:.55}
+  .photo{aspect-ratio:16/9;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:13.5px}
+  .photo{position:relative;overflow:hidden}
+  .photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .photo.none{aspect-ratio:auto;height:44px;font-size:12.5px;background:var(--soft);border-bottom:1px solid var(--line)}
+  .body{padding:18px 20px 20px;display:flex;flex-direction:column;gap:12px;flex:1}
+  .title-row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .name{font-size:19px;font-weight:800;margin:0;letter-spacing:-.03em}
+  .tag{font-size:12.5px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap}
+  .t-ok{color:var(--ok);background:var(--ok-bg)}
+  .t-wait{color:var(--wait);background:var(--wait-bg)}
+  .t-no{color:var(--no);background:var(--no-bg)}
+  .t-ex{color:var(--ex);background:var(--ex-bg)}
+  .price-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px}
+  .price{font-size:26px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+  .price small{font-size:15px;font-weight:700;margin-left:1px}
+  .price.none{font-size:16px;font-weight:600;color:var(--mute)}
+  .vat{font-size:12px;font-weight:600;color:var(--wait);background:var(--wait-bg);border-radius:6px;padding:2px 7px}
+  .pp-line{font-size:14px;font-weight:700;color:var(--accent);background:var(--accent-bg);border-radius:8px;padding:6px 10px;align-self:flex-start}
+  .info{margin:0;display:grid;grid-template-columns:72px 1fr;gap:6px 10px;font-size:14px}
+  .info dt{color:var(--mute);font-weight:500}
+  .info dd{margin:0;color:var(--ink2)}
+  .missing{font-size:12.5px;color:var(--mute)}
+  .notes{margin:0;padding:12px 14px;background:var(--soft);border-radius:10px;list-style:none;font-size:14px;color:var(--ink2);display:flex;flex-direction:column;gap:4px}
+  .notes li{padding-left:14px;position:relative}
+  .notes li::before{content:"";position:absolute;left:2px;top:.65em;width:5px;height:5px;border-radius:50%;background:var(--mute)}
+  .map{margin-top:auto;font-size:13.5px;font-weight:600;color:var(--accent);text-decoration:none}
+  .map:hover{text-decoration:underline}
+  .empty{background:var(--card);border-radius:var(--radius);padding:30px;text-align:center;color:var(--sub)}
+
+  footer{margin:40px 0 50px;font-size:13px;color:var(--sub);line-height:1.7}
+  footer .box{background:var(--card);border-radius:var(--radius);padding:18px 20px}
+  footer ol{padding-left:18px;margin:6px 0 0}
+  footer b{color:var(--ink2)}
+
+  @media (max-width:700px){
+    .grid{grid-template-columns:1fr}
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .view-head h2{font-size:21px}
+    td.memo{display:none} th.memo{display:none}
+  }
+
+  /* 인쇄: 모든 탭 내용을 차례로, A4 페이지에서 카드가 안 잘리게 */
+  @media print{
+    body{background:#fff;font-size:12.5px}
+    .wrap{max-width:none;padding:0}
+    .topbar,.chips{display:none !important}
+    .calc{border:1px solid var(--line);margin-top:0}
+    .view{display:block !important;padding:0}
+    .view + .view{break-before:page}
+    .view-head{break-after:avoid}
+    .stat,.tablebox,.card,footer .box{border:1px solid var(--line)}
+    .grid{gap:10px}
+    .card .photo{aspect-ratio:2/1}
+    .card .photo.none{aspect-ratio:auto;height:28px}
+    .body{padding:12px 14px;gap:8px}
+    .price{font-size:20px}
+    tbody tr{cursor:default}
+    .card[hidden]{display:flex !important}
+    a{color:inherit;text-decoration:none}
+    footer{break-before:page;margin:0}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand"><h1>1/19 공연장 대관 정리</h1><span>2027.1.19(화) · 단위 만원 · 업데이트 2026.11.04</span></div>
+    <nav class="tabs" id="tabs"></nav>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="calc">
+    <span class="ttl">1인당 비용</span>
+    <label>나눌 인원 <input id="people" type="number" min="1" step="1" placeholder="0"> 명</label>
+    <label><input id="vat" type="checkbox"> 부가세 별도인 곳 10% 포함</label>
+    <div class="hint">대관료를 인원수로 나눈 금액(100원 단위 올림). 리허설 연장, 장비 추가, 영상 촬영 같은 옵션은 빠짐</div>
+  </section>
+
+  <main id="views"></main>
+
+  <footer>
+    <div class="box">
+      <p style="margin-top:0"><b>꼭 확인할 것</b> · 가격·대관 여부·비고는 직접 문의해서 받은 내용. 위치·수용 인원·가까운 역은 웹 검색 기준이라 바뀌었을 수 있음. 계약 전 공연장에 재확인 필요. '미확인' 항목은 확인 안 된 정보</p>
+      <b>참고한 출처</b>
+      <ol>
+        <li>홍대라이브홀롤러코스터 유튜브 채널 소개 (주소)</li>
+        <li>뮬(mule.co.kr) 홍대우주정거장 대관 게시글 (주소·역 거리)</li>
+        <li>뮬 원픽홀 대관 게시글 제목 (신촌역 거리·좌석 수)</li>
+        <li>인디스트릿 공연장 목록 (감마홀·퍼플노이즈 라이브홀 주소)</li>
+        <li>클럽에프에프 공식 X 계정 (주소)</li>
+        <li>개인 X 게시글 '홍대 라이브클럽 수용인원' (Club FF 수용 인원, 비공식)</li>
+        <li>팝가 공연 정보 (얼라이브홀·몽향 주소, 출처 KOPIS)</li>
+        <li>Time Out Seoul (프리즘홀·프리버드 주소·역)</li>
+        <li>The Korea Times 'Finding the Scene 7' (베이비돌 위치: 신촌)</li>
+        <li>일간스포츠 2022.07.28 기사 (스페이스브릭: 홍대 위치)</li>
+        <li>오늘의AI위키 '사운드마인드' (낙성대 위치)</li>
+        <li>Wanderlog 클럽 샤프 (망원동 위치)</li>
+      </ol>
+    </div>
+  </footer>
+</div>
+
+<script>
+/* ===== 데이터: 여기만 고치면 사이트 전체가 바뀜 =====
+  status: ok(가) / wait(연락넣음) / no(불) / ex(제외)
+  price: 만원 단위, 모르면 null
+  vatExtra: 부가세 별도면 true
+  photo: images 폴더 안 파일 이름 (없으면 "")
+*/
+const AREAS = [
+  {id:"hongdae", name:"홍대", desc:"서교동·상수 포함"},
+  {id:"hapjeong", name:"합정", desc:"망원 포함"},
+  {id:"sinchon", name:"신촌", desc:""},
+  {id:"etc", name:"그 외 서울", desc:"낙성대·신논현·성수·방배"},
+  {id:"unknown", name:"위치 확인 필요", desc:"검색으로 위치를 못 찾은 곳"}
+];
+
+const VENUES = [
+  {name:"롤러코스터", status:"ok", price:43, area:"hongdae", place:"홍대(서교동)", address:"서울 마포구 동교로 147", capacity:"", station:"", note:[], photo:"rollercoaster.jpg"},
+  {name:"사운드마인드", status:"ok", price:45, area:"etc", place:"낙성대", address:"", capacity:"", station:"", note:["대관 시간 리허설 포함 5시간"], photo:"soundmind.jpg"},
+  {name:"우주정거장", status:"ok", price:50, area:"hongdae", place:"홍대(서교동)", address:"서울 마포구 서교동 328-13 지하1층", capacity:"", station:"홍대입구역 도보 약 5분 (공연장 게시글 기준)", note:[], photo:"spacestation.jpg"},
+  {name:"클럽샤프", status:"ok", price:50, area:"hapjeong", place:"망원", address:"마포구 망원동 (상세 주소 미확인)", capacity:"", station:"", note:[], photo:"clubsharp.jpg"},
+  {name:"201P 신촌", status:"ok", price:55, area:"sinchon", place:"신촌", address:"", capacity:"", station:"", note:[], photo:"201p.jpg"},
+  {name:"라이브앤라우드", status:"ok", price:60, area:"hongdae", place:"홍대", address:"", capacity:"", station:"", note:[], photo:"liveandloud.jpg"},
+  {name:"베이비돌", status:"ok", price:60, area:"sinchon", place:"신촌", address:"", capacity:"", station:"", vatExtra:true, note:["5시간 50만원, 시간당 10만원 추가","부가세 별도"], photo:"babydoll.jpg"},
+  {name:"스페이스한강", status:"ok", price:60, area:"hongdae", place:"홍대", address:"", capacity:"", station:"", note:["7시간 대관 60만원 / 시간당 10만원"], photo:"spacehangang.jpg"},
+  {name:"원픽홀", status:"ok", price:64, area:"sinchon", place:"신촌", address:"", capacity:"약 100석 (공연장 게시글 기준)", station:"2호선 신촌역 도보 약 5분 (공연장 게시글 기준)", vatExtra:true, note:["부가세 별도","음향·조명 스태프 2명 포함","총 7시간 (본공연·리허설 각 최대 2시간 30분)","건반 1대 추가 3만원 / 영상 촬영 10만원"], photo:"onepickhall.jpg"},
+  {name:"001클럽", status:"ok", price:70, area:"hapjeong", place:"합정", address:"", capacity:"", station:"", note:[], photo:"001club.jpg"},
+  {name:"감마홀", status:"ok", price:70, area:"hongdae", place:"홍대", address:"서울 마포구 와우산로21길 19-11 지하2층", capacity:"", station:"", note:[], photo:"gammahall.jpg"},
+  {name:"옥타바리움", status:"ok", price:70, area:"hongdae", place:"상수", address:"", capacity:"", station:"", vatExtra:true, note:["세금계산서 발행 시 10% 추가"], photo:"octavarium.jpg"},
+  {name:"펄스 라이브홀", status:"ok", price:70, area:"etc", place:"신논현", address:"", capacity:"", station:"", note:[], photo:"pulse.jpg"},
+  {name:"플렉스라운지 (본점)", status:"ok", price:70, area:"hapjeong", place:"합정", address:"", capacity:"", station:"", note:[], photo:"flexlounge.jpg"},
+  {name:"AOR", status:"ok", price:70, area:"hongdae", place:"홍대", address:"", capacity:"", station:"", note:[], photo:"aor.jpg"},
+  {name:"Club FF", status:"ok", price:70, area:"hongdae", place:"홍대(서교동)", address:"서울 마포구 서교동 407-8 지하1층", capacity:"스탠딩 약 150명 (비공식 SNS 정리글)", station:"", note:[], photo:"clubff.jpg"},
+  {name:"라디오가가", status:"ok", price:75, area:"hapjeong", place:"합정", address:"", capacity:"", station:"", note:[], photo:"radiogaga.jpg"},
+  {name:"얼라이브홀", status:"ok", price:75, area:"hapjeong", place:"합정", address:"서울 마포구 독막로7길 20 (구 크랙홀)", capacity:"", station:"", note:["키보드 1대 추가 5만원","인이어·영상 촬영 무료","포스터 송출 가능, 냉장고 무료 사용"], photo:"alivehall.jpg"},
+  {name:"드림홀", status:"ok", price:80, area:"hapjeong", place:"합정", address:"", capacity:"", station:"", note:[], photo:"dreamhall.jpg"},
+  {name:"클럽 뮤직스페이스", status:"ok", price:80, area:"etc", place:"성수", address:"", capacity:"", station:"", note:["영상 촬영 무료"], photo:"musicspace.jpg"},
+  {name:"퍼플노이즈", status:"ok", price:80, area:"etc", place:"방배", address:"서울 서초구 방배동 910-5 지하1층", capacity:"", station:"", note:[], photo:"purplenoise.jpg"},
+
+  {name:"클럽 프리버드", status:"wait", price:null, area:"hongdae", place:"홍대·합정 사이 (상수 쪽)", address:"마포구 와우산로17길 19-22 (Time Out 기준, 오래된 정보일 수 있음)", capacity:"", station:"상수역 2번 출구 (Time Out 기준)", note:[], photo:""},
+  {name:"프리버드라이브홀", status:"wait", price:40, area:"hongdae", place:"홍대", address:"", capacity:"", station:"", note:[], photo:""},
+  {name:"프리즘홀", status:"wait", price:null, area:"hapjeong", place:"합정", address:"서울 마포구 양화로12길 6", capacity:"", station:"합정역 2번 출구 (Time Out 기준)", note:[], photo:""},
+
+  {name:"그림라이브하우스", status:"no", price:65, area:"hongdae", place:"홍대", address:"", capacity:"", station:"", note:["현수막·배너 무료 제작"], photo:""},
+  {name:"긱하우스", status:"no", price:null, area:"sinchon", place:"신촌", address:"", capacity:"", station:"", note:[], photo:""},
+  {name:"스윙홀", status:"no", price:null, area:"hongdae", place:"홍대", address:"", capacity:"", station:"", note:[], photo:""},
+  {name:"스페이스브릭", status:"no", price:null, area:"hongdae", place:"홍대 (기사 기준)", address:"", capacity:"", station:"", note:[], photo:""},
+
+  {name:"몽향", status:"ex", price:null, area:"sinchon", place:"신촌", address:"서울 서대문구 연세로5다길 10 지하1층", capacity:"", station:"", note:[], photo:""},
+  {name:"디앤디라이브공연장", status:"ex", price:null, area:"unknown", place:"", address:"", capacity:"", station:"", note:[], photo:""},
+  {name:"디엔지홀", status:"ex", price:150, area:"unknown", place:"", address:"", capacity:"", station:"", note:["가격 부담으로 제외"], photo:""},
+  {name:"DNG 라이브홀", status:"ex", price:null, area:"unknown", place:"", address:"", capacity:"", station:"", note:[], photo:""},
+  {name:"스튜디오 엔텐바흐", status:"ex", price:null, area:"unknown", place:"", address:"", capacity:"", station:"", note:["싸이로 겨울공연 장소"], photo:""}
+];
+/* ===== 데이터 끝 ===== */
+
+const STATUS = {
+  ok:{label:"대관 가능", cls:"t-ok", order:0},
+  wait:{label:"연락 중", cls:"t-wait", order:1},
+  no:{label:"불가", cls:"t-no", order:2},
+  ex:{label:"제외", cls:"t-ex", order:3}
+};
+const FILTERS = [["all","전체"],["ok","대관 가능"],["wait","연락 중"],["noex","불가·제외"]];
+const state = {tab:"overview", filter:{}};
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const won = x => x.toLocaleString("ko-KR") + "원";
+const areaName = id => AREAS.find(a=>a.id===id).name;
+const slug = v => "v-" + VENUES.indexOf(v);
+const sorted = [...VENUES].sort((a,b)=>
+  STATUS[a.status].order - STATUS[b.status].order || (a.price ?? 999) - (b.price ?? 999));
+
+function perPerson(v){
+  const n = parseInt($("people").value, 10);
+  if(!v.price || !n || n < 1) return null;
+  let total = v.price * 10000;
+  if(v.vatExtra && $("vat").checked) total *= 1.1;
+  return Math.ceil(total / n / 100) * 100;
+}
+function subPlace(v){
+  const s = (v.place||"").replace(/\(.*\)/,"").trim();
+  return s && s !== areaName(v.area) ? s : "";
+}
+
+/* 상단 탭 */
+function renderTabs(){
+  const okTotal = VENUES.filter(v=>v.status==="ok").length;
+  const tabs = [{id:"overview", name:"대관 가능 한눈에 보기", n:okTotal}]
+    .concat(AREAS.map(a=>({id:a.id, name:a.name, n:VENUES.filter(v=>v.area===a.id).length})));
+  $("tabs").innerHTML = tabs.map(t=>
+    `<button class="tab ${state.tab===t.id?"on":""}" data-tab="${t.id}">${t.name}<span class="n">${t.n}</span></button>`).join("");
+}
+
+/* 한눈에 보기 */
+const OV = {ok:"대관 가능한 곳", wait:"연락 중인 곳", no:"불가한 곳", ex:"제외한 곳"};
+function overviewHTML(){
+  const f = state.ov || "ok";
+  const count = s => VENUES.filter(v=>v.status===s).length;
+  const rows = sorted.filter(v=>v.status===f).map(v=>{
+    const pp = perPerson(v);
+    const sp = subPlace(v);
+    return `<tr data-go="${slug(v)}" data-area="${v.area}" title="눌러서 상세 보기">
+      <td><span class="vn">${esc(v.name)}</span></td>
+      <td><span class="ar">${esc(areaName(v.area))}${sp ? " · "+esc(sp) : ""}</span></td>
+      <td class="num">${v.price ? `<b>${v.price}</b>만원${v.vatExtra ? " *" : ""}` : "미정"}</td>
+      <td class="num pp">${pp ? won(pp) : "—"}</td>
+      <td class="memo">${esc(v.note[0] || "")}</td></tr>`;
+  }).join("");
+  const stat = (k,l) => `<button class="stat ${k} ${f===k?"on":""}" data-ov="${k}"><b>${count(k)}곳</b><span>${l}</span></button>`;
+  return `<div class="view-head"><h2>${OV[f]} 한눈에 보기</h2><p>가격 낮은 순 · 위 숫자 칸을 누르면 상태별로 바뀜 · 줄을 누르면 해당 지역 상세로 이동</p></div>
+    <div class="stats">${stat("ok","대관 가능")}${stat("wait","연락 중")}${stat("no","불가")}${stat("ex","제외")}</div>
+    <div class="tablebox"><table>
+      <thead><tr><th>공연장</th><th>지역</th><th class="num">대관료</th><th class="num">1인당</th><th class="memo">비고</th></tr></thead>
+      <tbody>${rows}</tbody></table>
+      <div class="foot-note">* 부가세(또는 세금계산서) 10% 별도</div>
+    </div>`;
+}
+
+/* 카드 */
+function card(v){
+  const st = STATUS[v.status];
+  const pp = perPerson(v);
+  const known = [["위치", v.place], ["주소", v.address], ["수용 인원", v.capacity], ["가까운 역", v.station]];
+  const has = known.filter(k=>k[1]), miss = known.filter(k=>!k[1]).map(k=>k[0]);
+  const mapQ = encodeURIComponent(v.name + (v.place ? " " + v.place.split(/[ (·]/)[0] : "") + " 공연장");
+  return `<article class="card ${v.status==="no"||v.status==="ex"?"dim":""}" id="${slug(v)}" data-status="${v.status}">
+    ${v.photo ? `<div class="photo"><img src="images/${esc(v.photo)}" alt="${esc(v.name)} 사진" loading="lazy"></div>`
+              : `<div class="photo none">사진 준비 중</div>`}
+    <div class="body">
+      <div class="title-row"><h3 class="name">${esc(v.name)}</h3><span class="tag ${st.cls}">${st.label}</span></div>
+      <div class="price-row">
+        ${v.price ? `<span class="price">${v.price}<small>만원</small></span>` : `<span class="price none">가격 미정</span>`}
+        ${v.vatExtra ? `<span class="vat">부가세 별도</span>` : ""}
+      </div>
+      ${pp ? `<div class="pp-line">1인당 약 ${won(pp)}</div>` : ""}
+      ${has.length ? `<dl class="info">${has.map(k=>`<dt>${k[0]}</dt><dd>${esc(k[1])}</dd>`).join("")}</dl>` : ""}
+      ${miss.length ? `<div class="missing">미확인: ${miss.join(" · ")}</div>` : ""}
+      ${v.note.length ? `<ul class="notes">${v.note.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>` : ""}
+      <a class="map" href="https://map.naver.com/p/search/${mapQ}" target="_blank" rel="noopener">네이버 지도에서 찾기 →</a>
+    </div>
+  </article>`;
+}
+
+function areaHTML(a){
+  const list = sorted.filter(v=>v.area===a.id);
+  const ok = list.filter(v=>v.status==="ok").length;
+  const f = state.filter[a.id] || "all";
+  return `<div class="view-head"><h2>${a.name}</h2><p>${a.desc ? a.desc + " · " : ""}전체 ${list.length}곳 · 대관 가능 ${ok}곳</p></div>
+    <div class="chips" data-area="${a.id}">${FILTERS.map(([k,l])=>`<button class="chip ${f===k?"on":""}" data-f="${k}">${l}</button>`).join("")}</div>
+    <div class="grid">${list.map(card).join("")}</div>
+    <div class="empty" hidden>해당하는 공연장이 없음</div>`;
+}
+
+function applyFilter(areaId){
+  const view = $("view-"+areaId); if(!view) return;
+  const f = state.filter[areaId] || "all";
+  let shown = 0;
+  view.querySelectorAll(".card").forEach(c=>{
+    const s = c.dataset.status;
+    const ok = f==="all" || (f==="noex" ? (s==="no"||s==="ex") : s===f);
+    c.hidden = !ok; if(ok) shown++;
+  });
+  view.querySelector(".empty").hidden = shown>0;
+}
+
+function renderViews(){
+  $("views").innerHTML =
+    `<section class="view" id="view-overview">${overviewHTML()}</section>` +
+    AREAS.map(a=>`<section class="view" id="view-${a.id}">${areaHTML(a)}</section>`).join("");
+  AREAS.forEach(a=>applyFilter(a.id));
+  showTab(state.tab, false);
+}
+
+function showTab(id, scroll=true){
+  if(!$("view-"+id)) id = "overview";
+  state.tab = id;
+  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on", v.id==="view-"+id));
+  renderTabs();
+  if(location.hash.slice(1)!==id) history.replaceState(null,"","#"+id);
+  if(scroll) window.scrollTo({top:0, behavior:"smooth"});
+  const active = document.querySelector(".tab.on");
+  if(active){ const bar=$("tabs"); bar.scrollLeft = active.offsetLeft - (bar.clientWidth-active.offsetWidth)/2; }
+}
+
+/* 이벤트 */
+$("tabs").addEventListener("click", e=>{
+  const b = e.target.closest(".tab"); if(b) showTab(b.dataset.tab);
+});
+$("views").addEventListener("click", e=>{
+  const st = e.target.closest(".stat");
+  if(st){ state.ov = st.dataset.ov; $("view-overview").innerHTML = overviewHTML(); return; }
+  const chip = e.target.closest(".chip");
+  if(chip){
+    const area = chip.parentElement.dataset.area;
+    state.filter[area] = chip.dataset.f;
+    chip.parentElement.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on", c===chip));
+    applyFilter(area); return;
+  }
+  const row = e.target.closest("tr[data-go]");
+  if(row){
+    state.filter[row.dataset.area] = "all"; applyFilter(row.dataset.area);
+    const ch = document.querySelector(`.chips[data-area="${row.dataset.area}"]`);
+    ch.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on", c.dataset.f==="all"));
+    showTab(row.dataset.area, false);
+    const el = $(row.dataset.go);
+    const y = el.getBoundingClientRect().top + window.scrollY - document.querySelector(".topbar").offsetHeight - 16;
+    window.scrollTo({top:y, behavior:"smooth"});
+    el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"), 1600);
+  }
+});
+function recalc(){ const t = state.tab; renderViews(); showTab(t, false); }
+$("people").addEventListener("input", recalc);
+$("vat").addEventListener("change", recalc);
+window.addEventListener("hashchange", ()=>showTab(location.hash.slice(1), false));
+
+state.tab = location.hash.slice(1) || "overview";
+renderViews();
+</script>
+</body>
+</html>
